@@ -53,6 +53,56 @@ fun funWithCast() {
     println("$gala | $apple | $fruit | $anyObj | $fruit2 | $apple2 | $gala2 ")
 }
 
+
+sealed class List<out T> {
+
+    abstract fun isEmpty(): Boolean
+
+    // fun cons(head: T, tail: List<T>): List<T> = Cons(head, tail)  // Won't compile because T param is in the "in" position
+
+    // fun cons( head: () -> T, tail: () -> List<T>): List<T> = Cons(head(), tail())  // Can't fool it either
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> cons(head: @UnsafeVariance T): List<T> = Cons(head, this) as List<T>
+
+    private object Nil: List<Nothing>() {
+        override fun isEmpty() = true
+    }
+
+    private class Cons<T>(
+            head: T,
+            tail: List<T>
+    ): List<T>() {
+        override fun isEmpty() = false
+
+    }
+
+    companion object {
+        operator fun <T> invoke(vararg az: T): List<T> =
+                az.foldRight(Nil as List<T>) {
+                    head: T, tail: List<T> -> Cons(head,tail)
+                }
+
+
+        fun <T> getEmptyList(): List<T> = Nil
+
+        fun <T> cons(head: @UnsafeVariance T, tail: List<@UnsafeVariance T>): List<T> = Cons(head,tail) // This compiles
+
+    }
+}
+
 fun main() {
     funWithCast()
+    val apple_1 = Apple()
+    val apple_2 = Apple()
+    val apple_3 = Apple()
+    val emptyList:List<Apple> = List.getEmptyList()
+    val one = List(apple_1)
+    val three = List(apple_1, apple_2, apple_3)
+
+    val list2: List<Apple> = List.cons(apple_2, one)
+
+    val justTwo: List<Apple> = one.cons(apple_2)
+
+
 }
